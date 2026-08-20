@@ -1,0 +1,40 @@
+name: Windows-EXE bauen
+
+# Laeuft automatisch bei jedem Push auf main/master, und laesst sich
+# zusaetzlich manuell ueber den "Run workflow"-Knopf im Actions-Tab
+# von GitHub anstossen.
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-windows-exe:
+    # WICHTIG: laeuft auf einem ECHTEN Windows-Server bei GitHub - kein
+    # Wine, keine Emulation. Deshalb funktioniert PyInstaller hier ganz
+    # normal, obwohl das Repository selbst von einem Linux-Rechner aus
+    # gepflegt werden kann.
+    runs-on: windows-latest
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Python installieren
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: PyInstaller installieren
+        run: pip install pyinstaller
+
+      - name: EXE bauen
+        # Passe den Pfad "gui.py" an, falls deine Skripte in einem
+        # Unterordner liegen (z.B. "cipher_irc/gui.py").
+        run: pyinstaller --onefile --windowed --name CipherIRC gui.py
+
+      - name: EXE als Download bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: CipherIRC-Windows
+          path: dist/CipherIRC.exe
