@@ -217,9 +217,16 @@ class ChatApp:
         self.root.after(100, self._poll_queue)
 
     def _handle_incoming(self, sender, text):
+        if not text.startswith("CMSG:"):
+            # Unverschluesselte Nachricht (z.B. Antwort eines Bots wie
+            # notify_bot, der ja weder Codebuch noch HMAC-Schluessel
+            # kennt und daher nur Klartext senden kann) - deutlich
+            # markiert anzeigen statt sie stillschweigend zu verwerfen.
+            self._log(f"<{sender}> (unverschluesselt) {text}")
+            return
         complete = self.reassembler.feed(text)
         if complete is None:
-            return  # noch nicht alle Chunks da, oder keine CMSG-Zeile
+            return  # noch nicht alle Chunks da
         if self.cipher is None:
             return
         try:
