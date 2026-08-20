@@ -86,6 +86,9 @@ class IRCClient:
         else:
             self.sock = raw_sock
         self._running = True
+        self._send_raw("CAP LS 302")
+        self._send_raw("CAP REQ :server-time")
+        self._send_raw("CAP END")
         self._send_raw(f"NICK {self.nickname}")
         self._send_raw(f"USER {self.nickname} 0 * :{self.nickname}")
         self._recv_thread = threading.Thread(target=self._recv_loop, daemon=True)
@@ -170,6 +173,16 @@ class IRCClient:
         self.on_status("disconnected")
 
     def _handle_line(self, line):
+        # IRCv3 Message Tags: optionaler @tag1=wert;tag2=wert Praefix vor
+        # der eigentlichen Zeile - kommt z.B. durch die server-time CAP
+        # zustande, die wir fuer die Channel-History-Wiedergabe brauchen.
+        # Muss vor allem anderen Parsing abgeschnitten werden.
+        if line.startswith("@"):
+            space_idx = line.find(" ")
+            if space_idx == -1:
+                return  # nur Tags ohne eigentliche Nachricht - ignorieren
+            line = line[space_idx + 1:]
+
         if line.startswith("PING"):
             self._send_raw("PONG" + line[4:])
             return
