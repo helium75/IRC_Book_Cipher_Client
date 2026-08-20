@@ -55,6 +55,10 @@ class ChatApp:
         self.tls_var = tk.BooleanVar(value=True)
         tk.Checkbutton(frame, text="TLS", variable=self.tls_var).grid(row=0, column=4)
 
+        self.notify_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(frame, text="Ton bei Nachricht", variable=self.notify_var).grid(
+            row=1, column=4)
+
         tk.Label(frame, text="Nick").grid(row=1, column=0, sticky="e")
         self.nick_var = tk.StringVar(value="user")
         tk.Entry(frame, textvariable=self.nick_var, width=15).grid(row=1, column=1)
@@ -241,6 +245,8 @@ class ChatApp:
             return
 
         self._log(f"<{sender}> {plaintext}")
+        if self.notify_var.get():
+            self.root.bell()
 
     def _send(self):
         text = self.msg_var.get()
