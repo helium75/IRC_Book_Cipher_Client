@@ -7,6 +7,7 @@ Windows, Linux und macOS. Fuer eine eigenstaendige .exe siehe README.md.
 """
 
 import queue
+import re
 import threading
 import time
 import tkinter as tk
@@ -273,6 +274,8 @@ class ChatApp:
         self._log(f"<ich> {text}")
         self.msg_var.set("")
 
+    _MSG_ALIAS_RE = re.compile(r"^msg\s+(\S+)\s+(.+)$", re.IGNORECASE | re.DOTALL)
+
     def _send_command(self, command_text):
         """Sendet einen rohen IRC-Befehl (z.B. /join #anderer-channel,
         /nick neuernick, /part) UNVERSCHLUESSELT direkt ans Protokoll.
@@ -282,6 +285,16 @@ class ChatApp:
         if not self.client:
             self._log("* Nicht verbunden.")
             return
+
+        # /msg <ziel> <text> ist ein gaengiges IRC-Client-Kuerzel fuer
+        # PRIVMSG <ziel> :<text> (kennt praktisch jeder IRC-Client,
+        # z.B. auch Kiwi) - UnrealIRCd selbst kennt aber kein "MSG"-
+        # Protokollkommando, daher hier vorher uebersetzen.
+        match = self._MSG_ALIAS_RE.match(command_text)
+        if match:
+            target, message = match.group(1), match.group(2)
+            command_text = f"PRIVMSG {target} :{message}"
+
         self.client.send_raw(command_text)
         self._log(f"* Befehl gesendet: /{command_text}")
 
